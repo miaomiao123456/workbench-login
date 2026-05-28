@@ -1,0 +1,957 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=1440">
+<title>审核进度 · 北极星投研平台</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&family=Noto+Sans+SC:wght@300;400;500;600;700;900&display=swap');
+
+*, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+:root {
+  --bg-primary: #f5f6fa;
+  --bg-secondary: #ffffff;
+  --border: #e2e6ef;
+  --border-active: #c8cdd8;
+  --text-primary: #1a1f2e;
+  --text-secondary: #5a6478;
+  --text-muted: #9aa3b4;
+  --accent-blue: #2d7ff9;
+  --accent-blue-light: rgba(45,127,249,0.08);
+  --accent-cyan: #00b894;
+  --accent-gold: #e09f13;
+  --red: #ef4444;
+  --green: #22c55e;
+  --font-mono: 'JetBrains Mono', monospace;
+  --font-sans: 'Noto Sans SC', -apple-system, sans-serif;
+}
+
+html, body {
+  height: 100vh;
+  overflow: hidden;
+  font-family: var(--font-sans);
+  background: var(--bg-primary);
+  color: var(--text-primary);
+}
+
+.page-wrapper {
+  display: flex;
+  height: 100vh;
+}
+
+/* ===== LEFT PANEL ===== */
+.left-panel {
+  flex: 1;
+  background: linear-gradient(145deg, #0f172a 0%, #1e293b 40%, #0f2744 100%);
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  overflow: hidden;
+  padding: 48px 52px;
+}
+
+.left-panel::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background-image:
+    linear-gradient(rgba(45,127,249,0.06) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(45,127,249,0.06) 1px, transparent 1px);
+  background-size: 40px 40px;
+}
+
+.left-panel::after {
+  content: '';
+  position: absolute;
+  width: 600px; height: 600px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(45,127,249,0.12) 0%, transparent 70%);
+  top: -120px; left: -120px;
+  pointer-events: none;
+}
+
+.left-glow-bottom {
+  position: absolute;
+  width: 500px; height: 500px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(0,184,148,0.1) 0%, transparent 70%);
+  bottom: -100px; right: -80px;
+  pointer-events: none;
+}
+
+.left-content {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 60px;
+}
+.brand-icon {
+  width: 42px; height: 42px;
+  border-radius: 10px;
+  background: linear-gradient(135deg, #2d7ff9, #00b4d8);
+  display: flex; align-items: center; justify-content: center;
+  box-shadow: 0 4px 16px rgba(45,127,249,0.4);
+  font-size: 20px;
+  color: #fff;
+  font-weight: 700;
+  font-family: var(--font-mono);
+}
+.brand-name {
+  font-size: 20px;
+  font-weight: 700;
+  color: #fff;
+  letter-spacing: 2px;
+}
+.brand-tag {
+  font-size: 9px;
+  color: var(--accent-cyan);
+  background: rgba(0,184,148,0.15);
+  border: 1px solid rgba(0,184,148,0.3);
+  padding: 2px 7px;
+  border-radius: 3px;
+  font-family: var(--font-mono);
+  letter-spacing: 0.5px;
+  margin-left: 4px;
+}
+
+.slogan { margin-bottom: 44px; }
+.slogan-main {
+  font-size: 30px;
+  font-weight: 700;
+  color: #fff;
+  line-height: 1.35;
+  letter-spacing: 1px;
+  margin-bottom: 14px;
+}
+.slogan-main span {
+  background: linear-gradient(90deg, #2d7ff9, #00b894);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+.slogan-sub {
+  font-size: 13px;
+  color: rgba(255,255,255,0.45);
+  line-height: 1.7;
+  max-width: 380px;
+}
+
+/* 步骤进度 */
+.step-bar {
+  display: flex;
+  align-items: center;
+  margin-bottom: 40px;
+}
+.step-node {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+}
+.step-circle {
+  width: 28px; height: 28px;
+  border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 11px;
+  font-weight: 700;
+  font-family: var(--font-mono);
+}
+.step-circle.done  { background: var(--accent-cyan); color: #fff; }
+.step-circle.active {
+  background: var(--accent-blue); color: #fff;
+  box-shadow: 0 0 0 4px rgba(45,127,249,0.2);
+}
+.step-circle.pending {
+  background: rgba(255,255,255,0.1);
+  color: rgba(255,255,255,0.3);
+  border: 1px solid rgba(255,255,255,0.15);
+}
+.step-label { font-size: 10px; color: rgba(255,255,255,0.4); white-space: nowrap; }
+.step-label.done-label { color: var(--accent-cyan); opacity: 0.8; }
+.step-label.active-label { color: rgba(255,255,255,0.85); }
+.step-line {
+  flex: 1;
+  height: 1px;
+  background: rgba(255,255,255,0.12);
+  margin-bottom: 22px;
+  min-width: 32px;
+}
+.step-line.done { background: var(--accent-cyan); opacity: 0.5; }
+
+.features {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  margin-bottom: auto;
+}
+.feature-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+  background: rgba(255,255,255,0.04);
+  border: 1px solid rgba(255,255,255,0.07);
+  border-radius: 10px;
+  padding: 13px 16px;
+}
+.feature-icon {
+  width: 34px; height: 34px;
+  border-radius: 8px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 15px; flex-shrink: 0;
+}
+.fi-blue  { background: rgba(45,127,249,0.18); }
+.fi-cyan  { background: rgba(0,184,148,0.18); }
+.fi-gold  { background: rgba(224,159,19,0.18); }
+.feature-text h4 {
+  font-size: 12.5px; font-weight: 600;
+  color: rgba(255,255,255,0.9); margin-bottom: 3px;
+}
+.feature-text p { font-size: 11px; color: rgba(255,255,255,0.35); line-height: 1.5; }
+
+/* ===== RIGHT PANEL ===== */
+.right-panel {
+  width: 560px;
+  flex-shrink: 0;
+  background: var(--bg-secondary);
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  box-shadow: -4px 0 32px rgba(0,0,0,0.08);
+  overflow: hidden;
+}
+
+.right-top-actions {
+  position: absolute;
+  top: 20px; right: 24px;
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  z-index: 10;
+}
+.rt-btn {
+  font-size: 12px;
+  color: var(--text-muted);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  padding: 5px 10px;
+  border-radius: 6px;
+  border: 1px solid var(--border);
+  background: transparent;
+  transition: all 0.2s;
+  font-family: var(--font-sans);
+}
+.rt-btn:hover {
+  background: var(--bg-primary);
+  color: var(--text-secondary);
+  border-color: var(--border-active);
+}
+
+.right-scroll {
+  flex: 1;
+  overflow-y: auto;
+  padding: 52px 52px 40px;
+  scrollbar-width: thin;
+  scrollbar-color: var(--border) transparent;
+}
+.right-scroll::-webkit-scrollbar { width: 4px; }
+.right-scroll::-webkit-scrollbar-track { background: transparent; }
+.right-scroll::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+
+/* 状态卡头部 */
+.status-header {
+  margin-bottom: 32px;
+  padding-top: 12px;
+}
+.status-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 12px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 600;
+  margin-bottom: 14px;
+  font-family: var(--font-mono);
+  letter-spacing: 0.3px;
+}
+.badge-pending {
+  background: rgba(224,159,19,0.12);
+  color: #b07d0a;
+  border: 1px solid rgba(224,159,19,0.3);
+}
+.badge-dot {
+  width: 6px; height: 6px;
+  border-radius: 50%;
+  background: currentColor;
+  animation: blink 1.4s ease-in-out infinite;
+}
+@keyframes blink {
+  0%, 100% { opacity: 1; }
+  50%       { opacity: 0.3; }
+}
+.status-title {
+  font-size: 22px;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin-bottom: 6px;
+}
+.status-sub {
+  font-size: 13px;
+  color: var(--text-muted);
+  line-height: 1.6;
+}
+
+/* 进度时间轴 */
+.timeline {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  margin-bottom: 28px;
+  position: relative;
+}
+.tl-item {
+  display: flex;
+  gap: 16px;
+  position: relative;
+}
+.tl-item:not(:last-child)::after {
+  content: '';
+  position: absolute;
+  left: 15px;
+  top: 32px;
+  bottom: -4px;
+  width: 2px;
+  background: var(--border);
+  z-index: 0;
+}
+.tl-item.done:not(:last-child)::after { background: var(--accent-cyan); opacity: 0.4; }
+.tl-item.active:not(:last-child)::after {
+  background: linear-gradient(to bottom, var(--accent-blue), var(--border));
+  opacity: 0.5;
+}
+
+.tl-dot-wrap {
+  width: 32px;
+  flex-shrink: 0;
+  display: flex;
+  justify-content: center;
+  padding-top: 4px;
+  position: relative;
+  z-index: 1;
+}
+.tl-dot {
+  width: 32px; height: 32px;
+  border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 14px;
+  font-weight: 700;
+}
+.tl-dot.done  {
+  background: linear-gradient(135deg, var(--accent-cyan), #00cec9);
+  color: #fff;
+  box-shadow: 0 2px 8px rgba(0,184,148,0.3);
+}
+.tl-dot.active {
+  background: linear-gradient(135deg, var(--accent-blue), #1a6ce8);
+  color: #fff;
+  box-shadow: 0 2px 8px rgba(45,127,249,0.35);
+}
+.tl-dot.pending {
+  background: var(--bg-primary);
+  color: var(--text-muted);
+  border: 2px solid var(--border);
+}
+
+.tl-body {
+  flex: 1;
+  padding: 4px 0 24px;
+}
+.tl-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin-bottom: 4px;
+  line-height: 1.4;
+}
+.tl-item.pending .tl-title { color: var(--text-muted); }
+.tl-desc {
+  font-size: 12.5px;
+  color: var(--text-secondary);
+  line-height: 1.6;
+  margin-bottom: 6px;
+}
+.tl-item.pending .tl-desc { color: var(--text-muted); }
+.tl-time {
+  font-size: 11px;
+  color: var(--text-muted);
+  font-family: var(--font-mono);
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+.tl-tag {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-size: 11px;
+  font-weight: 600;
+  font-family: var(--font-mono);
+  margin-bottom: 6px;
+}
+.tag-done    { background: rgba(0,184,148,0.1); color: #00926e; }
+.tag-active  { background: rgba(45,127,249,0.1); color: var(--accent-blue); }
+.tag-pending { background: var(--bg-primary); color: var(--text-muted); border: 1px solid var(--border); }
+
+/* 提交信息卡 */
+.info-card {
+  background: var(--bg-primary);
+  border: 1.5px solid var(--border);
+  border-radius: 12px;
+  padding: 18px 20px;
+  margin-bottom: 24px;
+}
+.info-card-title {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-muted);
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  margin-bottom: 14px;
+}
+.info-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 7px 0;
+  border-bottom: 1px solid var(--border);
+  font-size: 13px;
+}
+.info-row:last-child { border-bottom: none; padding-bottom: 0; }
+.info-row:first-of-type { padding-top: 0; }
+.info-key { color: var(--text-muted); }
+.info-val { color: var(--text-primary); font-weight: 500; }
+.info-val.mono { font-family: var(--font-mono); font-size: 12px; }
+
+/* 预计完成提示 */
+.eta-bar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: rgba(45,127,249,0.06);
+  border: 1.5px solid rgba(45,127,249,0.14);
+  border-radius: 10px;
+  padding: 14px 16px;
+  margin-bottom: 28px;
+}
+.eta-icon { font-size: 20px; flex-shrink: 0; }
+.eta-text { flex: 1; }
+.eta-text strong {
+  display: block;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin-bottom: 2px;
+}
+.eta-text span { font-size: 12px; color: var(--text-secondary); }
+
+/* 操作按钮区 */
+.action-row {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 20px;
+}
+.btn-primary {
+  flex: 1;
+  height: 44px;
+  border: none;
+  border-radius: 8px;
+  background: linear-gradient(90deg, #2d7ff9, #1a6ce8);
+  color: #fff;
+  font-size: 14px;
+  font-weight: 600;
+  font-family: var(--font-sans);
+  cursor: pointer;
+  letter-spacing: 1px;
+  transition: all 0.2s;
+  box-shadow: 0 4px 14px rgba(45,127,249,0.3);
+}
+.btn-primary:hover {
+  background: linear-gradient(90deg, #1a6ce8, #155dc9);
+  box-shadow: 0 6px 18px rgba(45,127,249,0.4);
+  transform: translateY(-1px);
+}
+.btn-primary:active { transform: translateY(0); }
+.btn-outline {
+  flex: 1;
+  height: 44px;
+  border: 1.5px solid var(--border);
+  border-radius: 8px;
+  background: transparent;
+  color: var(--text-secondary);
+  font-size: 13.5px;
+  font-weight: 500;
+  font-family: var(--font-sans);
+  cursor: pointer;
+  transition: all 0.2s;
+  letter-spacing: 0.5px;
+}
+.btn-outline:hover {
+  border-color: var(--border-active);
+  background: var(--bg-primary);
+  color: var(--text-primary);
+}
+
+/* 底部提示 */
+.bottom-tip {
+  font-size: 12px;
+  color: var(--text-muted);
+  text-align: center;
+  line-height: 1.7;
+}
+.bottom-tip a {
+  color: var(--accent-blue);
+  text-decoration: none;
+}
+.bottom-tip a:hover { text-decoration: underline; }
+
+/* 客服弹窗 */
+.cs-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(15,23,42,0.45);
+  z-index: 300;
+  align-items: flex-end;
+  justify-content: flex-end;
+  padding: 20px 28px 32px;
+}
+.cs-overlay.open { display: flex; }
+.cs-panel {
+  width: 340px; height: 460px;
+  background: #fff;
+  border-radius: 16px;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.22);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  animation: csSlideIn 0.28s cubic-bezier(0.34,1.2,0.64,1);
+}
+@keyframes csSlideIn {
+  from { transform: translateY(24px); opacity: 0; }
+  to   { transform: translateY(0); opacity: 1; }
+}
+.cs-header {
+  display: flex; align-items: center; gap: 10px;
+  padding: 14px 16px;
+  background: linear-gradient(90deg, #2d7ff9, #1a6ce8);
+  color: #fff; flex-shrink: 0;
+}
+.cs-avatar {
+  width: 36px; height: 36px;
+  border-radius: 50%;
+  background: rgba(255,255,255,0.2);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 18px; flex-shrink: 0;
+}
+.cs-info { flex: 1; }
+.cs-name { font-size: 14px; font-weight: 600; }
+.cs-status { font-size: 11px; opacity: 0.85; display: flex; align-items: center; gap: 4px; }
+.cs-status::before {
+  content: ''; width: 6px; height: 6px;
+  border-radius: 50%; background: #4ade80; display: inline-block;
+}
+.cs-close {
+  background: rgba(255,255,255,0.15); border: none; color: #fff;
+  width: 28px; height: 28px; border-radius: 50%; cursor: pointer;
+  font-size: 13px; display: flex; align-items: center; justify-content: center;
+  transition: background 0.2s; flex-shrink: 0;
+}
+.cs-close:hover { background: rgba(255,255,255,0.28); }
+.cs-body {
+  flex: 1; overflow-y: auto; padding: 14px;
+  display: flex; flex-direction: column; gap: 12px;
+  background: #f5f6fa;
+  scrollbar-width: thin; scrollbar-color: #e2e6ef transparent;
+}
+.cs-body::-webkit-scrollbar { width: 3px; }
+.cs-body::-webkit-scrollbar-thumb { background: #e2e6ef; border-radius: 2px; }
+.cs-msg-bot, .cs-msg-user {
+  display: flex; flex-direction: column; max-width: 84%;
+}
+.cs-msg-bot { align-self: flex-start; }
+.cs-msg-user { align-self: flex-end; align-items: flex-end; }
+.cs-bubble {
+  padding: 9px 13px; border-radius: 12px;
+  font-size: 13px; line-height: 1.55; word-break: break-word;
+}
+.cs-msg-bot .cs-bubble {
+  background: #fff; color: #1a1f2e;
+  border-radius: 4px 12px 12px 12px;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.07);
+}
+.cs-msg-user .cs-bubble {
+  background: #2d7ff9; color: #fff;
+  border-radius: 12px 4px 12px 12px;
+}
+.cs-time { font-size: 10.5px; color: #9aa3b4; margin-top: 3px; padding: 0 2px; }
+.cs-footer {
+  display: flex; gap: 8px; padding: 10px 12px;
+  border-top: 1px solid var(--border);
+  background: #fff; flex-shrink: 0;
+}
+.cs-input {
+  flex: 1; height: 38px; padding: 0 12px;
+  border: 1.5px solid var(--border); border-radius: 8px;
+  font-size: 13px; font-family: var(--font-sans);
+  outline: none; transition: border-color 0.2s; color: var(--text-primary);
+}
+.cs-input:focus { border-color: var(--accent-blue); }
+.cs-send {
+  height: 38px; padding: 0 14px;
+  background: var(--accent-blue); border: none;
+  border-radius: 8px; color: #fff;
+  font-size: 13px; font-weight: 500;
+  font-family: var(--font-sans);
+  cursor: pointer; transition: background 0.2s; white-space: nowrap;
+}
+.cs-send:hover { background: #1a6ce8; }
+</style>
+</head>
+<body>
+
+<div class="page-wrapper">
+  <!-- ===== 左侧品牌区 ===== -->
+  <div class="left-panel">
+    <div class="left-glow-bottom"></div>
+    <div class="left-content">
+
+      <div class="brand">
+        <div class="brand-icon">★</div>
+        <span class="brand-name">北极星投研平台</span>
+        <span class="brand-tag">AI · PRO</span>
+      </div>
+
+      <div class="slogan">
+        <div class="slogan-main">
+          专业资质<br><span>正在审核中</span>
+        </div>
+        <div class="slogan-sub">
+          我们的专业团队正在核验您提交的资料，审核通过后您将获得完整的投研功能权限。
+        </div>
+      </div>
+
+      <div class="step-bar">
+        <div class="step-node">
+          <div class="step-circle done">✓</div>
+          <span class="step-label done-label">账号注册</span>
+        </div>
+        <div class="step-line done"></div>
+        <div class="step-node">
+          <div class="step-circle done">✓</div>
+          <span class="step-label done-label">完善资料</span>
+        </div>
+        <div class="step-line done"></div>
+        <div class="step-node">
+          <div class="step-circle active">3</div>
+          <span class="step-label active-label">后台审核</span>
+        </div>
+        <div class="step-line"></div>
+        <div class="step-node">
+          <div class="step-circle pending">4</div>
+          <span class="step-label">开始使用</span>
+        </div>
+      </div>
+
+      <div class="features">
+        <div class="feature-item">
+          <div class="feature-icon fi-blue">🔍</div>
+          <div class="feature-text">
+            <h4>专业资质核验</h4>
+            <p>人工审核确保平台用户均为专业投研人员，保障信息质量</p>
+          </div>
+        </div>
+        <div class="feature-item">
+          <div class="feature-icon fi-cyan">⏱</div>
+          <div class="feature-text">
+            <h4>1–3 个工作日完成</h4>
+            <p>审核结果将通过短信和邮件同步通知，请保持联系方式畅通</p>
+          </div>
+        </div>
+        <div class="feature-item">
+          <div class="feature-icon fi-gold">📬</div>
+          <div class="feature-text">
+            <h4>审核完成即可使用</h4>
+            <p>通过审核后即可解锁全部 AI 投研功能，包括深度报告与专家匹配</p>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ===== 右侧内容区 ===== -->
+  <div class="right-panel">
+    <div class="right-top-actions">
+      <button class="rt-btn" onclick="openCS()">💬 联系客服</button>
+    </div>
+
+    <div class="right-scroll">
+
+      <!-- 状态头部 -->
+      <div class="status-header">
+        <div class="status-badge badge-pending">
+          <span class="badge-dot"></span>
+          审核中
+        </div>
+        <div class="status-title">资料已提交，等待人工审核</div>
+        <div class="status-sub">请耐心等待，我们会在 1–3 个工作日内完成审核并通知您</div>
+      </div>
+
+      <!-- 进度时间轴 -->
+      <div class="timeline">
+
+        <div class="tl-item done">
+          <div class="tl-dot-wrap">
+            <div class="tl-dot done">✓</div>
+          </div>
+          <div class="tl-body">
+            <span class="tl-tag tag-done">已完成</span>
+            <div class="tl-title">资料提交成功</div>
+            <div class="tl-desc">您的个人资料与职业信息已成功提交，系统已收录。</div>
+            <div class="tl-time" id="submitTime">—</div>
+          </div>
+        </div>
+
+        <div class="tl-item active">
+          <div class="tl-dot-wrap">
+            <div class="tl-dot active">2</div>
+          </div>
+          <div class="tl-body">
+            <span class="tl-tag tag-active">进行中</span>
+            <div class="tl-title">后台人工审核</div>
+            <div class="tl-desc">专业团队正在核验您提交的机构信息与资质材料，预计 1–3 个工作日完成。</div>
+            <div class="tl-time">预计完成：<span id="etaDate">—</span></div>
+          </div>
+        </div>
+
+        <div class="tl-item pending">
+          <div class="tl-dot-wrap">
+            <div class="tl-dot pending">3</div>
+          </div>
+          <div class="tl-body">
+            <span class="tl-tag tag-pending">待解锁</span>
+            <div class="tl-title">审核通过，开始使用</div>
+            <div class="tl-desc">审核通过后，您将收到通知并可立即使用全部 AI 投研功能。</div>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- 提交信息摘要 -->
+      <div class="info-card">
+        <div class="info-card-title">提交信息</div>
+        <div class="info-row">
+          <span class="info-key">提交时间</span>
+          <span class="info-val mono" id="infoSubmitTime">—</span>
+        </div>
+        <div class="info-row">
+          <span class="info-key">审核编号</span>
+          <span class="info-val mono" id="reviewId">—</span>
+        </div>
+        <div class="info-row">
+          <span class="info-key">当前状态</span>
+          <span class="info-val" style="color:#b07d0a;font-weight:600;">审核中</span>
+        </div>
+        <div class="info-row">
+          <span class="info-key">预计完成</span>
+          <span class="info-val mono" id="infoEta">—</span>
+        </div>
+      </div>
+
+      <!-- 预计时间提示 -->
+      <div class="eta-bar">
+        <span class="eta-icon">📋</span>
+        <div class="eta-text">
+          <strong>审核结果将主动通知您</strong>
+          <span>通过短信与注册邮箱同步发送，请保持联系方式畅通</span>
+        </div>
+      </div>
+
+      <!-- 操作按钮 -->
+      <div class="action-row">
+        <button class="btn-primary" onclick="refreshStatus()">刷新状态</button>
+        <button class="btn-outline" onclick="window.location.href='profile.html'">修改资料</button>
+      </div>
+
+      <div class="bottom-tip">
+        如有疑问请 <a href="#" onclick="openCS();return false;">联系客服</a>，或返回
+        <a href="login.html">登录页</a>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<!-- 客服聊天弹窗 -->
+<div class="cs-overlay" id="csOverlay" onclick="csOverlayClick(event)">
+  <div class="cs-panel">
+    <div class="cs-header">
+      <div class="cs-avatar">🎧</div>
+      <div class="cs-info">
+        <div class="cs-name">北极星客服</div>
+        <div class="cs-status">在线服务中</div>
+      </div>
+      <button class="cs-close" onclick="closeCS()">✕</button>
+    </div>
+    <div class="cs-body" id="csMessages">
+      <div class="cs-msg-bot">
+        <div class="cs-bubble">您好！欢迎使用北极星投研平台，请问有什么可以帮您？😊</div>
+        <div class="cs-time">刚刚</div>
+      </div>
+    </div>
+    <div class="cs-footer">
+      <input class="cs-input" id="csInput" placeholder="请输入您的问题…" maxlength="200" onkeydown="csKeydown(event)">
+      <button class="cs-send" onclick="csSend()">发送</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// 初始化页面时间信息
+(function init() {
+  const now = new Date();
+  const fmt = d =>
+    d.getFullYear() + '-' +
+    String(d.getMonth()+1).padStart(2,'0') + '-' +
+    String(d.getDate()).padStart(2,'0') + ' ' +
+    String(d.getHours()).padStart(2,'0') + ':' +
+    String(d.getMinutes()).padStart(2,'0');
+
+  // 审核编号：时间戳后8位
+  const rid = 'PR' + Date.now().toString().slice(-8).toUpperCase();
+
+  // 预计完成：工作日+3（跳过周末）
+  function addWorkDays(date, days) {
+    let d = new Date(date);
+    let added = 0;
+    while (added < days) {
+      d.setDate(d.getDate() + 1);
+      if (d.getDay() !== 0 && d.getDay() !== 6) added++;
+    }
+    return d;
+  }
+  const eta = addWorkDays(now, 3);
+  const etaStr = eta.getFullYear() + '-' +
+    String(eta.getMonth()+1).padStart(2,'0') + '-' +
+    String(eta.getDate()).padStart(2,'0');
+
+  document.getElementById('submitTime').textContent    = fmt(now);
+  document.getElementById('infoSubmitTime').textContent = fmt(now);
+  document.getElementById('reviewId').textContent      = rid;
+  document.getElementById('etaDate').textContent       = etaStr + ' 前';
+  document.getElementById('infoEta').textContent       = etaStr;
+})();
+
+// 刷新状态（演示）
+let _refreshCount = 0;
+function refreshStatus() {
+  const btn = document.querySelector('.btn-primary');
+  const orig = btn.textContent;
+  btn.textContent = '刷新中…';
+  btn.disabled = true;
+  setTimeout(() => {
+    btn.textContent = orig;
+    btn.disabled = false;
+    _refreshCount++;
+    const tips = [
+      '状态已是最新，审核仍在进行中',
+      '已更新，审核预计按时完成',
+      '审核中，请继续等待通知'
+    ];
+    showToast(tips[_refreshCount % tips.length]);
+  }, 900);
+}
+
+// Toast 提示
+function showToast(msg) {
+  let t = document.getElementById('_toast');
+  if (!t) {
+    t = document.createElement('div');
+    t.id = '_toast';
+    Object.assign(t.style, {
+      position:'fixed', bottom:'32px', left:'50%',
+      transform:'translateX(-50%) translateY(12px)',
+      background:'#1a1f2e', color:'#fff',
+      padding:'10px 20px', borderRadius:'8px',
+      fontSize:'13px', fontFamily:'var(--font-sans)',
+      opacity:'0', transition:'all 0.25s', zIndex:'500',
+      whiteSpace:'nowrap', pointerEvents:'none',
+      boxShadow:'0 4px 16px rgba(0,0,0,0.2)'
+    });
+    document.body.appendChild(t);
+  }
+  t.textContent = msg;
+  t.style.opacity = '1';
+  t.style.transform = 'translateX(-50%) translateY(0)';
+  clearTimeout(t._timer);
+  t._timer = setTimeout(() => {
+    t.style.opacity = '0';
+    t.style.transform = 'translateX(-50%) translateY(12px)';
+  }, 2400);
+}
+
+// 客服聊天
+function openCS() {
+  document.getElementById('csOverlay').classList.add('open');
+  document.getElementById('csInput').focus();
+}
+function closeCS() {
+  document.getElementById('csOverlay').classList.remove('open');
+}
+function csOverlayClick(e) {
+  if (e.target === document.getElementById('csOverlay')) closeCS();
+}
+function csKeydown(e) { if (e.key === 'Enter') csSend(); }
+const _csReplies = [
+  '感谢您的咨询！请稍候，专属客服即将为您服务。',
+  '如需人工支持，可拨打服务热线：400-888-8888（工作日 9:00–18:00）',
+  '您的审核进度可在本页面实时查看，如有异常我们会主动联系您。',
+  '您的问题已记录，我们会在工作时间内尽快回复，请耐心等候。',
+  '如有紧急事项，可发邮件至 support@polaris-research.com'
+];
+let _csIdx = 0;
+function csSend() {
+  const input = document.getElementById('csInput');
+  const msg = input.value.trim();
+  if (!msg) return;
+  const body = document.getElementById('csMessages');
+  const now = new Date();
+  const t = now.getHours().toString().padStart(2,'0') + ':' + now.getMinutes().toString().padStart(2,'0');
+  const uDiv = document.createElement('div');
+  uDiv.className = 'cs-msg-user';
+  uDiv.innerHTML = `<div class="cs-bubble">${msg.replace(/</g,'&lt;').replace(/>/g,'&gt;')}</div><div class="cs-time">${t}</div>`;
+  body.appendChild(uDiv);
+  input.value = '';
+  body.scrollTop = body.scrollHeight;
+  setTimeout(() => {
+    const bDiv = document.createElement('div');
+    bDiv.className = 'cs-msg-bot';
+    bDiv.innerHTML = `<div class="cs-bubble">${_csReplies[_csIdx % _csReplies.length]}</div><div class="cs-time">${t}</div>`;
+    body.appendChild(bDiv);
+    _csIdx++;
+    body.scrollTop = body.scrollHeight;
+  }, 700);
+}
+</script>
+</body>
+</html>
